@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,40 +16,26 @@ var (
 func parseArgs() {
 	flag.Parse()
 	target := flag.Arg(0)
+
 	if target != "" {
 		dir = target
-	}
-
-	sep := string(os.PathSeparator)
-	if !strings.HasSuffix(dir, "/") {
-		dir += sep
 	}
 }
 
 func finder(dir string) {
-	infos, err := ioutil.ReadDir(dir)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, info := range infos {
-		name := info.Name()
-		if strings.HasPrefix(name, ".") {
-			continue
+	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			panic(err)
 		}
 
-		if strings.Index(name, *exclude) != -1 {
-			continue
+		if strings.HasPrefix(path, ".") || strings.Contains(path, *exclude) || info.IsDir() {
+			return nil
 		}
 
-		file := filepath.Join(dir, name)
+		fmt.Println(path)
 
-		if info.IsDir() {
-			finder(file)
-		} else {
-			fmt.Println(file)
-		}
-	}
+		return nil
+	})
 }
 
 func main() {
